@@ -75,3 +75,28 @@ export const getLeaderboard = async (top = 10) => {
         return [];
     }
 };
+
+export const saveUserData = async (user, data) => {
+    if (!user) return;
+    try {
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, data, { merge: true });
+    } catch (error) {
+        console.error("Error saving user data", error);
+    }
+};
+
+export const getUserData = async (user) => {
+    if (!user) return null;
+    try {
+        const userRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+            return docSnap.data();
+        }
+        return null;
+    } catch (error) {
+        console.error("Error getting user data", error);
+        return null;
+    }
+};

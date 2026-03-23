@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Shield, Users, Cpu, Coins, Rocket, Building2, Briefcase, Globe, Skull, RotateCcw, Sparkles, Languages, Clock, Trophy, LogIn, LogOut, List, X } from 'lucide-react';
-import { auth, loginWithGoogle, logout, saveHighScore, getLeaderboard } from './firebase';
+import { auth, loginWithGoogle, logout, saveHighScore, getLeaderboard, saveUserData, getUserData } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
 // --- GAME LOGIC DATA (Language Independent) ---
@@ -439,11 +439,46 @@ export default function App() {
     const [leaderboard, setLeaderboard] = useState([]);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
+            if (currentUser) {
+                const data = await getUserData(currentUser);
+                if (data) {
+                    if (data.metaCoins !== undefined) setMetaCoins(data.metaCoins);
+                    if (data.stats !== undefined) setStats(data.stats);
+                    if (data.sprints !== undefined) setSprints(data.sprints);
+                    if (data.gameState !== undefined) setGameState(data.gameState);
+                    if (data.kingNumber !== undefined) setKingNumber(data.kingNumber);
+                    if (data.lastRunYears !== undefined) setLastRunYears(data.lastRunYears);
+
+                    if (data.gameState === 'PLAYING') {
+                        const startSprints = data.sprints !== undefined ? data.sprints : 0;
+                        let eraObj = ERAS_DATA.find(e => startSprints < e.maxSprint) || ERAS_DATA[ERAS_DATA.length - 1];
+                        const eraDeck = DECK_DATA.filter(c => c.era === eraObj.id);
+                        const shuffled = [...eraDeck].sort(() => 0.5 - Math.random());
+                        setDeck(shuffled);
+                        setCurrentCardRef(shuffled[0]);
+                    }
+                }
+            }
         });
         return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        if (!user) return;
+        const timeout = setTimeout(() => {
+            saveUserData(user, {
+                metaCoins,
+                stats,
+                sprints,
+                gameState,
+                kingNumber,
+                lastRunYears
+            });
+        }, 1000);
+        return () => clearTimeout(timeout);
+    }, [metaCoins, stats, sprints, gameState, kingNumber, lastRunYears, user]);
 
     useEffect(() => {
         if (showLeaderboard) {
