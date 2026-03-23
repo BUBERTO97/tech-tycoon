@@ -565,17 +565,14 @@ export default function App() {
         const timeout = setTimeout(() => {
             saveUserData(user, {
                 metaCoins,
-                stats,
                 sprints,
                 gameState,
                 kingNumber,
                 lastRunYears,
-                gameOverReason,
-                isVictory
             });
         }, 1000);
         return () => clearTimeout(timeout);
-    }, [metaCoins, stats, sprints, gameState, kingNumber, lastRunYears, gameOverReason, isVictory, user, isLoaded]);
+    }, [metaCoins, sprints, gameState, kingNumber, lastRunYears, user, isLoaded]);
 
     useEffect(() => {
         if (showLeaderboard) {
@@ -646,7 +643,10 @@ export default function App() {
             setLlamaTimer(0);
             setGameState('GAMEOVER');
             setKingNumber(prev => prev + 1);
-            if (user) saveHighScore(user, sprints);
+            if (user) {
+                saveHighScore(user, sprints);
+                saveUserData(user, { stats: newStats, gameOverReason: t.reasons[reasonKey], isVictory: false });
+            }
         } else {
             const nextSprints = sprints + 1;
 
@@ -659,7 +659,10 @@ export default function App() {
                 setIsVictory(true);
                 setGameState('GAMEOVER');
                 setKingNumber(prev => prev + 1);
-                if (user) saveHighScore(user, nextSprints);
+                if (user) {
+                    saveHighScore(user, nextSprints);
+                    saveUserData(user, { stats: newStats, gameOverReason: t.reasons.victory, isVictory: true });
+                }
                 return;
             }
 
