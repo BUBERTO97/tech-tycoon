@@ -79,7 +79,7 @@ export const getLeaderboard = async (top = 10) => {
 export const saveUserData = async (user, data) => {
     if (!user) return;
     try {
-        const userRef = doc(db, 'users', user.uid);
+        const userRef = doc(db, 'leaderboard', user.uid);
         await setDoc(userRef, data, { merge: true });
     } catch (error) {
         console.error("Error saving user data", error);
@@ -89,7 +89,7 @@ export const saveUserData = async (user, data) => {
 export const getUserData = async (user) => {
     if (!user) return null;
     try {
-        const userRef = doc(db, 'users', user.uid);
+        const userRef = doc(db, 'leaderboard', user.uid);
         const docSnap = await getDoc(userRef);
         if (docSnap.exists()) {
             return docSnap.data();

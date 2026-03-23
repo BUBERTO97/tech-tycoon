@@ -433,10 +433,10 @@ export default function App() {
     const [lastRunYears, setLastRunYears] = useState(0);
     const [skipAmount, setSkipAmount] = useState(0);
     const [comboMsg, setComboMsg] = useState(null);
-
     const [user, setUser] = useState(null);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
     const [leaderboard, setLeaderboard] = useState([]);
+    const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -460,13 +460,16 @@ export default function App() {
                         setCurrentCardRef(shuffled[0]);
                     }
                 }
+                setIsLoaded(true);
+            } else {
+                setIsLoaded(false);
             }
         });
         return () => unsubscribe();
     }, []);
 
     useEffect(() => {
-        if (!user) return;
+        if (!user || !isLoaded) return;
         const timeout = setTimeout(() => {
             saveUserData(user, {
                 metaCoins,
