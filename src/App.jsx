@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Shield, Users, Cpu, Coins, Rocket, Building2, Briefcase, Globe, Skull, RotateCcw, Sparkles, Languages, Clock, Trophy, LogIn, LogOut, List, X, ChevronDown } from 'lucide-react';
+import { Shield, Users, Cpu, Coins, Rocket, Building2, Briefcase, Globe, Skull, RotateCcw, Sparkles, Languages, Clock, Trophy, LogIn, LogOut, List, X, ChevronDown, Crown, Zap } from 'lucide-react';
 import { auth, loginWithGoogle, logout, saveHighScore, getLeaderboard, saveUserData, getUserData } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -33,7 +33,21 @@ const DECK_DATA = [
     { id: 'c16', era: 'giant', left: { tech: 10, budget: 10 }, right: { budget: -40, tech: 15, morale: -15 } },
     { id: 'c17', era: 'giant', left: { tech: 30, security: -30 }, right: { tech: -25, security: 20 } },
     { id: 'c24', era: 'giant', left: { budget: -30, morale: 10 }, right: { security: -20, budget: 20, morale: -15 } },
-    { id: 'c25', era: 'giant', left: { tech: 10, security: 10 }, right: { budget: 30, tech: -20, security: -20 } }
+    { id: 'c25', era: 'giant', left: { tech: 10, security: 10 }, right: { budget: 30, tech: -20, security: -20 } },
+    // Unicorn Phase (45-59 Sprints)
+    { id: 'c26', era: 'unicorn', left: { budget: -15, morale: 10 }, right: { budget: 25, security: -20, morale: -15 } },
+    { id: 'c27', era: 'unicorn', left: { budget: -20, morale: 10 }, right: { budget: 20, morale: -20, tech: -10 } },
+    { id: 'c28', era: 'unicorn', left: { tech: -15, morale: -15 }, right: { budget: -30, morale: 20, tech: 15 } },
+    { id: 'c29', era: 'unicorn', left: { tech: -15, morale: -10 }, right: { tech: 20, budget: -25, morale: 10 } },
+    { id: 'c30', era: 'unicorn', left: { budget: 5, morale: -10 }, right: { budget: -25, morale: 15, tech: 10 } },
+    { id: 'c31', era: 'unicorn', left: { tech: 15, budget: -15, morale: 10 }, right: { budget: 20, morale: -20, security: 10 } },
+    // Global Phase (60-79 Sprints)
+    { id: 'c32', era: 'global', left: { morale: -10, budget: 5 }, right: { budget: -30, morale: 15, tech: 10 } },
+    { id: 'c33', era: 'global', left: { security: -25, budget: 5 }, right: { security: 20, budget: -25, morale: -10 } },
+    { id: 'c34', era: 'global', left: { tech: -10, budget: -10, security: 10 }, right: { budget: -25, security: -15, morale: -10 } },
+    { id: 'c35', era: 'global', left: { morale: -20, security: -10 }, right: { budget: -25, morale: 15, tech: -10 } },
+    { id: 'c36', era: 'global', left: { morale: -15, tech: -10 }, right: { budget: -20, morale: 20, tech: 15 } },
+    { id: 'c37', era: 'global', left: { morale: -5, tech: 5 }, right: { budget: -20, tech: -15, morale: 10 } }
 ];
 
 const EASTER_EGGS = [
@@ -44,10 +58,12 @@ const EASTER_EGGS = [
 ];
 
 const ERAS_DATA = [
-    { id: 'startup', maxSprint: 20, icon: Rocket },
-    { id: 'scaleup', maxSprint: 40, icon: Building2 },
-    { id: 'enterprise', maxSprint: 60, icon: Briefcase },
-    { id: 'giant', maxSprint: Infinity, icon: Globe }
+    { id: 'startup', maxSprint: 15, icon: Rocket },
+    { id: 'scaleup', maxSprint: 30, icon: Building2 },
+    { id: 'enterprise', maxSprint: 45, icon: Briefcase },
+    { id: 'unicorn', maxSprint: 60, icon: Zap },
+    { id: 'global', maxSprint: 80, icon: Globe },
+    { id: 'giant', maxSprint: Infinity, icon: Crown }
 ];
 
 const LANGUAGE_OPTIONS = [
@@ -66,14 +82,15 @@ const LOCALES = {
         ui: {
             title: "TECH TYCOON", subtitle: "Lead your IT company from a garage startup to a global Tech Giant. Swipe to make executive decisions!",
             start: "Launch Startup", dead: "was fired", ruledFor: "Survived for", sprints: "Sprints",
-            restart: "New Company (Sprint 0)", skipTime: "Use Coins to Fast-Forward (10 🪙 / Sprint):",
+            restart: "New Company (Sprint 0)", skipTime: "Use Coins to Fast-Forward (5 🪙 / Sprint):",
             skipBtn: "Skip", skipCost: "Cost", perfect: "Perfect Balance! +3 🪙", sprintPrefix: "Sprint",
             easterEggBonus: "Secret Found! +5 🪙",
             llamaBonus: "Llama Magic! Stats reset for 30s", llamaEnd: "Llama Magic faded!"
         },
         eras: {
             startup: { name: "Garage Startup", title: "Founder" }, scaleup: { name: "Scale-up", title: "CEO" },
-            enterprise: { name: "Enterprise", title: "Exec Director" }, giant: { name: "Tech Giant", title: "Tech Overlord" }
+            enterprise: { name: "Enterprise", title: "Exec Director" }, unicorn: { name: "Unicorn", title: "Unicorn CEO" },
+            global: { name: "Global Empire", title: "Global CEO" }, giant: { name: "Tech Giant", title: "Tech Overlord" }
         },
         reasons: {
             security_0: "A massive ransomware attack wiped all your servers. The company is ruined.", security_100: "Security became so strict that employees literally couldn't log in. Operations halted.",
@@ -108,6 +125,18 @@ const LOCALES = {
             c23: { char: "🌍 Outsourcing Firm", text: "We can cut your costs in half by outsourcing your entire customer support team.", left: "Keep it in-house.", right: "Outsource them." },
             c24: { char: "⚖️ Gov Regulator", text: "You have an illegal monopoly. We are threatening to break up your company.", left: "Fight in court.", right: "Lobby (Bribe) them." },
             c25: { char: "💎 Crypto Bro", text: "Let's put the entire company treasury into our own volatile memecoin!", left: "Absolutely not.", right: "To the moon!" },
+            c26: { char: "💰 CFO", text: "We're preparing for the IPO. Should we use... creative accounting to inflate our valuation?", left: "Keep honest books.", right: "Cook the numbers." },
+            c27: { char: "🎯 Product Manager", text: "Our freemium model is bleeding money. We need to switch to an aggressive subscription model.", left: "Stay freemium.", right: "Go subscription." },
+            c28: { char: "🏆 Talent Scout", text: "FAANG companies are poaching our best engineers with insane offers. We need to match their salaries.", left: "Let them go.", right: "Match the offers." },
+            c29: { char: "📱 Mobile Lead", text: "Our mobile app crashes 40% of the time. We need to halt everything and rebuild it from scratch.", left: "Patch and pray.", right: "Full rebuild." },
+            c30: { char: "🎪 Event Manager", text: "TechCrunch Disrupt wants us on the main stage. It costs a fortune but could attract massive attention.", left: "Skip the event.", right: "Go all in." },
+            c31: { char: "🔬 R&D Director", text: "We've made a breakthrough algorithm. We can patent it for profit or open-source it for community cred.", left: "Open source it.", right: "Patent it." },
+            c32: { char: "🌏 APAC Director", text: "We need offices in Tokyo and Singapore. It's incredibly expensive but opens massive Asian markets.", left: "Stay domestic.", right: "Expand to Asia." },
+            c33: { char: "🛡️ CISO", text: "A nation-state hacker group is targeting us. We need to build a dedicated cyber warfare defense team.", left: "Basic defenses only.", right: "Build the cyber team." },
+            c34: { char: "🏛️ Lobbyist", text: "New antitrust legislation threatens our entire business model. We need to spend millions on lobbying.", left: "Accept the rules.", right: "Lobby politicians." },
+            c35: { char: "🌱 Sustainability Officer", text: "Our data centers consume more electricity than some countries. The press is calling us climate criminals.", left: "Ignore the critics.", right: "Go green." },
+            c36: { char: "🎓 Chief Learning Officer", text: "We should build our own internal university to develop world-class engineering talent from within.", left: "Too expensive.", right: "Build the academy." },
+            c37: { char: "🤝 M&A Advisor", text: "A European competitor is struggling. We can acquire them cheaply, but we'd inherit massive tech debt.", left: "Let them fail.", right: "Acquire them." },
             easter_egg: { char: "👾 Hacker Zero", text: "A mysterious terminal opens. 'Free crypto if you know the secret gesture!'", left: "Close terminal", right: "Run script", up: "Extract Crypto!" },
             easter_egg_cat: { char: "🐱 Office Cat", text: "Meow. (The cat has jumped on your keyboard and demands uppies.)", left: "Shoo!", right: "Ignore", up: "Pet the cat!" },
             easter_egg_alien: { char: "👽 Cosmic Investor", text: "⍙⟒ ⍜⎎⎎⟒⍀ ☌⏃⌰⏃☊⏁⟟☊ ☊⍀⟒⎅⟟⏁⌇. Swipe UP to accept cosmic funding.", left: "Run away", right: "Call authorities", up: "Accept Funding!" },
@@ -118,14 +147,15 @@ const LOCALES = {
         ui: {
             title: "TECH TYCOON", subtitle: "Führe dein IT-Unternehmen vom Startup zum Tech-Giganten. Wische, um Entscheidungen zu treffen!",
             start: "Startup gründen", dead: "wurde gefeuert", ruledFor: "Überlebte", sprints: "Sprints",
-            restart: "Neue Firma (Sprint 0)", skipTime: "Münzen für Zeitsprung (10 🪙/Sprint):",
+            restart: "Neue Firma (Sprint 0)", skipTime: "Münzen für Zeitsprung (5 🪙/Sprint):",
             skipBtn: "Überspringen", skipCost: "Kosten", perfect: "Perfekte Balance! +3 🪙", sprintPrefix: "Sprint",
             easterEggBonus: "Geheimnis gefunden! +5 🪙",
             llamaBonus: "Lama-Magie! Werte für 30s zurückgesetzt", llamaEnd: "Lama-Magie verblasst!"
         },
         eras: {
             startup: { name: "Garagen-Startup", title: "Gründer" }, scaleup: { name: "Scale-up", title: "CEO" },
-            enterprise: { name: "Enterprise", title: "Direktor" }, giant: { name: "Tech-Gigant", title: "Tech Overlord" }
+            enterprise: { name: "Enterprise", title: "Direktor" }, unicorn: { name: "Unicorn", title: "Einhorn-CEO" },
+            global: { name: "Globales Imperium", title: "Globaler CEO" }, giant: { name: "Tech-Gigant", title: "Tech Overlord" }
         },
         reasons: {
             security_0: "Ein Ransomware-Angriff hat alle Server gelöscht. Die Firma ist ruiniert.", security_100: "Die Sicherheit war so streng, dass niemand mehr arbeiten konnte. Stillstand.",
@@ -158,6 +188,18 @@ const LOCALES = {
             c21: { char: "🧘 Wellness Guru", text: "Das Team ist gestresst. Lass uns ein Yoga-Retreat auf Bali finanzieren.", left: "Zu teuer.", right: "Namaste." },
             c22: { char: "📋 Compliance Officer", text: "Neue EU-Regeln erfordern einen massiven Umbau unserer Datenpipeline.", left: "Strafen zahlen.", right: "Sofort umbauen." },
             c23: { char: "🌍 Outsourcing Firm", text: "Wir können Kosten halbieren, wenn wir den Support auslagern.", left: "In-House behalten.", right: "Auslagern." },
+            c26: { char: "💰 CFO", text: "Wir bereiten den Börsengang vor. Sollen wir die Zahlen... kreativ aufbereiten?", left: "Ehrliche Bücher.", right: "Zahlen schönen." },
+            c27: { char: "🎯 Produktmanager", text: "Unser Freemium-Modell verbrennt Geld. Wir müssen auf ein aggressives Abo-Modell umsteigen.", left: "Freemium behalten.", right: "Abo-Modell einführen." },
+            c28: { char: "🏆 Talentscout", text: "FAANG-Unternehmen werben unsere besten Entwickler mit irren Angeboten ab. Wir müssen mithalten.", left: "Lass sie gehen.", right: "Gehälter anpassen." },
+            c29: { char: "📱 Mobile Lead", text: "Unsere App stürzt in 40% der Fälle ab. Wir müssen alles stoppen und von Grund auf neu bauen.", left: "Flicken und hoffen.", right: "Komplett neu bauen." },
+            c30: { char: "🎪 Event Manager", text: "TechCrunch Disrupt will uns auf der Hauptbühne. Es kostet ein Vermögen, bringt aber massive Aufmerksamkeit.", left: "Event überspringen.", right: "Alles geben." },
+            c31: { char: "🔬 F&E-Direktor", text: "Wir haben einen Durchbruch-Algorithmus entwickelt. Patentieren für Profit oder Open Source?", left: "Open Source.", right: "Patentieren." },
+            c32: { char: "🌏 APAC-Direktor", text: "Wir brauchen Büros in Tokio und Singapur. Extrem teuer, aber öffnet riesige asiatische Märkte.", left: "Inland bleiben.", right: "Nach Asien expandieren." },
+            c33: { char: "🛡️ CISO", text: "Eine staatliche Hackergruppe hat es auf uns abgesehen. Wir brauchen ein Cyber-Abwehrteam.", left: "Einfache Verteidigung.", right: "Cyber-Team aufbauen." },
+            c34: { char: "🏛️ Lobbyist", text: "Neues Kartellrecht bedroht unser Geschäftsmodell. Wir müssen Millionen für Lobbying ausgeben.", left: "Regeln akzeptieren.", right: "Politiker beeinflussen." },
+            c35: { char: "🌱 Nachhaltigkeitsbeauftragte", text: "Unsere Rechenzentren verbrauchen mehr Strom als manche Länder. Die Presse nennt uns Klimasünder.", left: "Kritiker ignorieren.", right: "Grün werden." },
+            c36: { char: "🎓 Bildungsdirektor", text: "Wir sollten eine eigene interne Universität aufbauen, um Weltklasse-Ingenieure auszubilden.", left: "Zu teuer.", right: "Akademie aufbauen." },
+            c37: { char: "🤝 M&A-Berater", text: "Ein europäischer Konkurrent schwächelt. Günstig kaufen, aber massiven Tech-Debt erben.", left: "Scheitern lassen.", right: "Übernehmen." },
             easter_egg: { char: "👾 Hacker Zero", text: "Ein mystisches Terminal öffnet sich. 'Gratis Krypto, wenn du die Geste kennst!'", left: "Terminal schließen", right: "Skript ausführen", up: "Krypto extrahieren!" },
             easter_egg_cat: { char: "🐱 Bürokatze", text: "Miau. (Die Katze verlangt Aufmerksamkeit und will nach oben.)", left: "Huscht!", right: "Ignorieren", up: "Katze streicheln!" },
             easter_egg_alien: { char: "👽 Kosmischer Investor", text: "⍙⟒ ⍜⎎⎎⟒⍀ ☌⏃⌰⏃☊⏁⟟☊ ☊⍀⟒⎅⟟⏁⌇. Nach OBEN wischen.", left: "Weglaufen", right: "Behörden rufen", up: "Geld annehmen!" },
@@ -168,14 +210,15 @@ const LOCALES = {
         ui: {
             title: "TECH TYCOON", subtitle: "Guida la tua azienda IT da una startup in garage a un colosso Tech. Scorri per prendere decisioni!",
             start: "Fonda Startup", dead: "è stato licenziato", ruledFor: "È sopravvissuto per", sprints: "Sprint",
-            restart: "Nuova Azienda (Sprint 0)", skipTime: "Usa monete per avanzare (10 🪙/Sprint):",
+            restart: "Nuova Azienda (Sprint 0)", skipTime: "Usa monete per avanzare (5 🪙/Sprint):",
             skipBtn: "Salta", skipCost: "Costo", perfect: "Equilibrio Perfetto! +3 🪙", sprintPrefix: "Sprint",
             easterEggBonus: "Segreto Trovato! +5 🪙",
             llamaBonus: "Magia del Lama! Stat. resettate per 30s", llamaEnd: "Magia svanita!"
         },
         eras: {
             startup: { name: "Startup in Garage", title: "Founder" }, scaleup: { name: "Scale-up", title: "CEO" },
-            enterprise: { name: "Enterprise", title: "Direttore" }, giant: { name: "Colosso Tech", title: "Overlord" }
+            enterprise: { name: "Enterprise", title: "Direttore" }, unicorn: { name: "Unicorno", title: "CEO Unicorno" },
+            global: { name: "Impero Globale", title: "CEO Globale" }, giant: { name: "Colosso Tech", title: "Overlord" }
         },
         reasons: {
             security_0: "Un attacco ransomware ha cancellato tutti i server. L'azienda è rovinata.", security_100: "La sicurezza è diventata così rigida che i dipendenti non riescono a fare login. Tutto bloccato.",
@@ -210,6 +253,18 @@ const LOCALES = {
             c23: { char: "🌍 Outsourcing Firm", text: "Possiamo dimezzare i costi esternalizzando l'intero supporto clienti.", left: "Tieni in-house.", right: "Esternalizza." },
             c24: { char: "⚖️ Gov Regulator", text: "Avete un monopolio. Minacciamo di smembrare la vostra azienda.", left: "Combatti in tribunale.", right: "Fai lobbying (Corrompi)." },
             c25: { char: "💎 Crypto Bro", text: "Mettiamo tutta la tesoreria in una nostra memecoin iper-volatile!", left: "Assolutamente no.", right: "To the moon!" },
+            c26: { char: "💰 CFO", text: "Ci stiamo preparando per la quotazione in borsa. Usiamo una contabilità... creativa per gonfiare la valutazione?", left: "Bilanci onesti.", right: "Truccare i numeri." },
+            c27: { char: "🎯 Product Manager", text: "Il modello freemium ci dissangua. Dobbiamo passare a un modello di abbonamento aggressivo.", left: "Resta freemium.", right: "Passa all'abbonamento." },
+            c28: { char: "🏆 Talent Scout", text: "Le grandi tech ci rubano i migliori ingegneri con offerte folli. Dobbiamo pareggiare gli stipendi.", left: "Lasciali andare.", right: "Pareggia le offerte." },
+            c29: { char: "📱 Mobile Lead", text: "La nostra app crasha il 40% delle volte. Dobbiamo fermare tutto e ricostruirla da zero.", left: "Patch e preghiere.", right: "Ricostruzione totale." },
+            c30: { char: "🎪 Event Manager", text: "TechCrunch Disrupt ci vuole sul palco principale. Costa una fortuna ma attirerebbe enorme attenzione.", left: "Salta l'evento.", right: "Tutto o niente." },
+            c31: { char: "🔬 Direttore R&S", text: "Abbiamo sviluppato un algoritmo rivoluzionario. Lo brevettiamo per profitto o open source?", left: "Open source.", right: "Brevettalo." },
+            c32: { char: "🌏 Direttore APAC", text: "Ci servono uffici a Tokyo e Singapore. Costosissimo ma apre mercati asiatici enormi.", left: "Resta nel paese.", right: "Espanditi in Asia." },
+            c33: { char: "🛡️ CISO", text: "Un gruppo hacker governativo ci ha nel mirino. Servono difese cyber dedicate.", left: "Difese base.", right: "Costruisci il cyber team." },
+            c34: { char: "🏛️ Lobbista", text: "Una nuova legge antitrust minaccia il nostro modello di business. Servono milioni in lobbying.", left: "Accetta le regole.", right: "Fai lobbying." },
+            c35: { char: "🌱 Resp. Sostenibilità", text: "I nostri data center consumano più elettricità di interi paesi. La stampa ci chiama criminali del clima.", left: "Ignora le critiche.", right: "Diventa green." },
+            c36: { char: "🎓 Direttore Formazione", text: "Dovremmo creare un'università interna per formare ingegneri di livello mondiale.", left: "Troppo costoso.", right: "Costruisci l'accademia." },
+            c37: { char: "🤝 Consulente M&A", text: "Un concorrente europeo è in difficoltà. Possiamo acquisirlo a poco, ma erediteremo un debito tecnico enorme.", left: "Lascialo fallire.", right: "Acquisiscilo." },
             easter_egg: { char: "👾 Hacker Zero", text: "Si apre un terminale misterioso. 'Crypto gratis se conosci il gesto segreto!'", left: "Chiudi terminale", right: "Esegui script", up: "Estrai Crypto!" },
             easter_egg_cat: { char: "🐱 Gatto dell'Ufficio", text: "Miao. (Il gatto è saltato sulla tastiera ed esige coccole.)", left: "Sciò!", right: "Ignora", up: "Accarezza il gatto!" },
             easter_egg_alien: { char: "👽 Investitore Cosmico", text: "⍙⟒ ⍜⎎⎎⟒⍀ ☌⏃⌰⏃☊⏁⟟☊ ☊⍀⟒⎅⟟⏁⌇. Scorri in ALTO.", left: "Scappa", right: "Chiama le autorità", up: "Accetta i fondi!" },
@@ -220,14 +275,15 @@ const LOCALES = {
         ui: {
             title: "TECH TYCOON", subtitle: "Lleva tu empresa TI desde un garaje a un gigante global. ¡Desliza para tomar decisiones!",
             start: "Lanzar Startup", dead: "fue despedido", ruledFor: "Sobrevivió por", sprints: "Sprints",
-            restart: "Nueva Empresa (Sprint 0)", skipTime: "Usa Monedas para Avanzar (10 🪙/Sprint):",
+            restart: "Nueva Empresa (Sprint 0)", skipTime: "Usa Monedas para Avanzar (5 🪙/Sprint):",
             skipBtn: "Saltar", skipCost: "Costo", perfect: "¡Equilibrio Perfecto! +3 🪙", sprintPrefix: "Sprint",
             easterEggBonus: "¡Secreto Encontrado! +5 🪙",
             llamaBonus: "¡Magia de Llama! Stats reiniciados por 30s", llamaEnd: "¡Magia desvanecida!"
         },
         eras: {
             startup: { name: "Startup de Garaje", title: "Fundador" }, scaleup: { name: "Scale-up", title: "CEO" },
-            enterprise: { name: "Enterprise", title: "Director Ejecutivo" }, giant: { name: "Gigante Tech", title: "Amo Supremo" }
+            enterprise: { name: "Enterprise", title: "Director Ejecutivo" }, unicorn: { name: "Unicornio", title: "CEO Unicornio" },
+            global: { name: "Imperio Global", title: "CEO Global" }, giant: { name: "Gigante Tech", title: "Amo Supremo" }
         },
         reasons: {
             security_0: "Un ransomware borró todos tus servidores. La empresa está arruinada.", security_100: "La seguridad es tan estricta que los empleados no pueden iniciar sesión. Operaciones detenidas.",
@@ -262,6 +318,18 @@ const LOCALES = {
             c23: { char: "🌍 Outsourcing Firm", text: "Podemos reducir costes a la mitad subcontratando el soporte al cliente.", left: "Mantenlo in-house.", right: "Subcontrata." },
             c24: { char: "⚖️ Gov Regulator", text: "Tienes un monopolio. Amenazamos con dividir tu empresa.", left: "Lucha en tribunales.", right: "Haz lobby (Soborna)." },
             c25: { char: "💎 Crypto Bro", text: "¡Metamos todos los fondos en nuestra propia memecoin volátil!", left: "Absolutamente no.", right: "¡To the moon!" },
+            c26: { char: "💰 CFO", text: "Nos preparamos para la salida a bolsa. ¿Usamos contabilidad... creativa para inflar la valoración?", left: "Libros honestos.", right: "Maquillar los números." },
+            c27: { char: "🎯 Product Manager", text: "El modelo freemium nos desangra. Necesitamos cambiar a un modelo de suscripción agresivo.", left: "Mantener freemium.", right: "Cambiar a suscripción." },
+            c28: { char: "🏆 Cazatalentos", text: "Las grandes tech nos roban a los mejores ingenieros con ofertas locas. Debemos igualar sus salarios.", left: "Déjalos ir.", right: "Iguala las ofertas." },
+            c29: { char: "📱 Mobile Lead", text: "Nuestra app se cuelga el 40% de las veces. Hay que parar todo y reconstruirla desde cero.", left: "Parchear y rezar.", right: "Reconstrucción total." },
+            c30: { char: "🎪 Event Manager", text: "TechCrunch Disrupt nos quiere en el escenario principal. Cuesta una fortuna pero atraería mucha atención.", left: "Pasar del evento.", right: "A por todas." },
+            c31: { char: "🔬 Director de I+D", text: "Hemos logrado un algoritmo revolucionario. ¿Lo patentamos o lo hacemos open source?", left: "Open source.", right: "Patentarlo." },
+            c32: { char: "🌏 Director APAC", text: "Necesitamos oficinas en Tokio y Singapur. Carísimo, pero abre mercados asiáticos masivos.", left: "Quedarnos aquí.", right: "Expandir a Asia." },
+            c33: { char: "🛡️ CISO", text: "Un grupo hacker de un estado-nación nos tiene en la mira. Necesitamos un equipo de ciberdefensa.", left: "Defensas básicas.", right: "Crear el equipo cyber." },
+            c34: { char: "🏛️ Lobista", text: "Una nueva ley antimonopolio amenaza nuestro modelo. Necesitamos gastar millones en lobbying.", left: "Aceptar las reglas.", right: "Hacer lobbying." },
+            c35: { char: "🌱 Oficial de Sostenibilidad", text: "Nuestros data centers consumen más electricidad que algunos países. La prensa nos llama criminales climáticos.", left: "Ignorar las críticas.", right: "Ser ecológicos." },
+            c36: { char: "🎓 Director de Aprendizaje", text: "Deberíamos crear nuestra propia universidad interna para formar ingenieros de clase mundial.", left: "Muy caro.", right: "Crear la academia." },
+            c37: { char: "🤝 Asesor de M&A", text: "Un competidor europeo está en problemas. Podemos adquirirlo barato, pero heredaríamos deuda técnica masiva.", left: "Que quiebre.", right: "Adquirirlo." },
             easter_egg: { char: "👾 Hacker Zero", text: "Se abre un terminal misterioso. '¡Cripto gratis si conoces el gesto!'", left: "Cerrar terminal", right: "Ejecutar script", up: "¡Extraer Cripto!" },
             easter_egg_cat: { char: "🐱 Gato de la Oficina", text: "Miau. (El gato saltó al teclado y exige atención.)", left: "¡Fuera!", right: "Ignorar", up: "¡Acariciar al gato!" },
             easter_egg_alien: { char: "👽 Inversor Cósmico", text: "⍙⟒ ⍜⎎⎎⟒⍀ ☌⏃⌰⏃☊⏁⟟☊ ☊⍀⟒⎅⟟⏁⌇. Desliza ARRIBA.", left: "Huir", right: "Llamar a las autoridades", up: "¡Aceptar fondos!" },
@@ -272,14 +340,15 @@ const LOCALES = {
         ui: {
             title: "科技大亨", subtitle: "带领你的IT公司从车库走向全球科技巨头。滑动卡牌做出高管决策！",
             start: "创立公司", dead: "被解雇了", ruledFor: "生存了", sprints: "个冲刺(Sprint)",
-            restart: "新公司 (第0冲刺)", skipTime: "使用金币快进 (10 🪙 / 冲刺):",
+            restart: "新公司 (第0冲刺)", skipTime: "使用金币快进 (5 🪙 / 冲刺):",
             skipBtn: "跳过", skipCost: "消耗", perfect: "完美平衡！ +3 🪙", sprintPrefix: "第",
             easterEggBonus: "发现秘密！ +5 🪙",
             llamaBonus: "羊驼魔法！属性重置30秒", llamaEnd: "羊驼魔法消失！"
         },
         eras: {
             startup: { name: "车库创业", title: "创始人" }, scaleup: { name: "扩大规模", title: "CEO" },
-            enterprise: { name: "企业级", title: "执行董事" }, giant: { name: "科技巨头", title: "科技霸主" }
+            enterprise: { name: "企业级", title: "执行董事" }, unicorn: { name: "独角兽", title: "独角兽CEO" },
+            global: { name: "全球帝国", title: "全球CEO" }, giant: { name: "科技巨头", title: "科技霸主" }
         },
         reasons: {
             security_0: "一场大规模的勒索软件攻击清空了你的所有服务器。公司完蛋了。", security_100: "安全极其严格，以至于员工根本无法登录。公司停止运转。",
@@ -314,6 +383,18 @@ const LOCALES = {
             c23: { char: "🌍 外包公司", text: "我们可以把整个客服团队外包出去，帮您削减一半成本。", left: "保留内部团队。", right: "外包出去。" },
             c24: { char: "⚖️ 政府监管员", text: "你们涉嫌非法垄断。我们正威胁要拆分你的公司。", left: "在法庭上抗争。", right: "游说(贿赂)他们。" },
             c25: { char: "💎 加密货币狂热者", text: "让我们把公司所有的资金都投入到我们自己发行的波动型Meme币中吧！", left: "绝对不行。", right: "To the moon!" },
+            c26: { char: "💰 首席财务官", text: "我们正在筹备上市。要不要用点‘创意会计’来抬高估值？", left: "诚实记账", right: "美化数据" },
+            c27: { char: "🎯 产品经理", text: "免费模式在烧钱。我们必须切换到激进的订阅模式。", left: "保持免费模式", right: "转向订阅制" },
+            c28: { char: "🏆 猎头", text: "大厂正在用天价薪资挖我们最好的工程师。我们必须匹配他们的待遇。", left: "随他们去", right: "匹配报价" },
+            c29: { char: "📱 移动端负责人", text: "我们的App有40%的崩溃率。必须停下一切，从头重建。", left: "修修补补", right: "全面重建" },
+            c30: { char: "🎪 活动经理", text: "TechCrunch想让我们上主舞台。费用高昂，但能吸引巨大关注。", left: "跳过活动", right: "全力以赴" },
+            c31: { char: "🔬 研发总监", text: "我们开发了突破性算法。是申请专利获利，还是开源赢得声誉？", left: "开源发布", right: "申请专利" },
+            c32: { char: "🌏 亚太区总监", text: "我们需要在东京和新加坡设立办事处。非常昂贵，但能打开巨大的亚洲市场。", left: "留在国内", right: "扩展到亚洲" },
+            c33: { char: "🛡️ 首席安全官", text: "一个国家级黑客组织正在针对我们。我们需要建立专门的网络战防御团队。", left: "基础防御就好", right: "组建网络战团队" },
+            c34: { char: "🏛️ 说客", text: "新的反垄断法威胁着我们的整个商业模式。我们需要花数百万进行游说。", left: "接受规则", right: "游说政客" },
+            c35: { char: "🌱 可持续发展官", text: "我们的数据中心耗电量超过了一些国家。媒体称我们为气候罪犯。", left: "无视批评", right: "走绿色路线" },
+            c36: { char: "🎓 首席学习官", text: "我们应该建立自己的内部大学，从内部培养世界级工程人才。", left: "太贵了", right: "建立学院" },
+            c37: { char: "🤝 并购顾问", text: "一个欧洲竞争对手陷入困境。我们可以低价收购，但会继承巨额技术债务。", left: "让他们倒闭", right: "收购他们" },
             easter_egg: { char: "👾 零号黑客", text: "一个神秘终端打开了。'如果你知道秘密手势，免费送你加密货币！'", left: "关闭终端", right: "运行脚本", up: "提取加密货币！" },
             easter_egg_cat: { char: "🐱 办公室猫", text: "喵。（猫跳到了你的键盘上，要求你抱抱。）", left: "走开！", right: "无视", up: "撸猫！" },
             easter_egg_alien: { char: "👽 宇宙投资者", text: "⍙⟒ ⍜⎎⎎⟒⍀ ☌⏃⌰⏃☊⏁⟟☊ ☊⍀⟒⎅⟟⏁⌇. 向上滑动以接受宇宙融资。", left: "逃跑", right: "呼叫有关部门", up: "接受投资！" },
@@ -324,14 +405,15 @@ const LOCALES = {
         ui: {
             title: "テックタイクーン", subtitle: "あなたのIT企業をガレージから世界的IT企業へと導け。スワイプで経営判断を下せ！",
             start: "スタートアップを立ち上げる", dead: "は解雇された", ruledFor: "生存期間", sprints: "スプリント",
-            restart: "新しい会社 (スプリント 0)", skipTime: "コインを使って早送り (10 🪙/スプリント):",
+            restart: "新しい会社 (スプリント 0)", skipTime: "コインを使って早送り (5 🪙/スプリント):",
             skipBtn: "スキップ", skipCost: "コスト", perfect: "パーフェクトバランス！ +3 🪙", sprintPrefix: "第",
             easterEggBonus: "秘密を発見！ +5 🪙",
             llamaBonus: "リャマの魔法！30秒間ステータスリセット", llamaEnd: "魔法が解けた！"
         },
         eras: {
             startup: { name: "ガレージスタートアップ", title: "創業者" }, scaleup: { name: "スケールアップ", title: "CEO" },
-            enterprise: { name: "大企業", title: "専務" }, giant: { name: "テックジャイアント", title: "テックの覇王" }
+            enterprise: { name: "大企業", title: "専務" }, unicorn: { name: "ユニコーン", title: "ユニコーンCEO" },
+            global: { name: "グローバル帝国", title: "グローバルCEO" }, giant: { name: "テックジャイアント", title: "テックの覇王" }
         },
         reasons: {
             security_0: "大規模なランサムウェア攻撃でサーバーが消滅しました。会社は破滅です。", security_100: "セキュリティが厳しすぎて社員がログインできません。業務が停止しました。",
@@ -366,6 +448,18 @@ const LOCALES = {
             c23: { char: "🌍 アウトソーシング企業", text: "カスタマーサポートをすべて外注すれば、コストを半分に抑えられます。", left: "自社で維持する。", right: "外注する。" },
             c24: { char: "⚖️ 政府の規制当局", text: "あなたは違法な独占をしています。会社を解体すると脅告されています。", left: "法廷で争う。", right: "ロビー活動（賄賂）をする。" },
             c25: { char: "💎 仮想通貨信者", text: "会社の資金をすべて、独自のボラティリティの高いミームコインに投資しましょう！", left: "絶対にダメだ。", right: "To the moon!" },
+            c26: { char: "💰 CFO", text: "IPOの準備中です。評価額を水増しするために…創造的な会計処理をしますか？", left: "正直な帳簿を維持", right: "数字を粉飾する" },
+            c27: { char: "🎯 プロダクトマネージャー", text: "フリーミアムモデルで大赤字です。アグレッシブなサブスクモデルに切り替える必要があります。", left: "フリーミアム維持", right: "サブスクに移行" },
+            c28: { char: "🏆 タレントスカウト", text: "GAFA企業が最高のエンジニアを破格の条件で引き抜いています。給与を合わせる必要があります。", left: "行かせてあげる", right: "条件を合わせる" },
+            c29: { char: "📱 モバイルリード", text: "アプリが40%の確率で落ちます。全てを止めてゼロから作り直す必要があります。", left: "パッチで凌ぐ", right: "完全に作り直す" },
+            c30: { char: "🎪 イベントマネージャー", text: "TechCrunch Disruptのメインステージに招待されました。莫大な費用ですが注目を集められます。", left: "イベントを見送る", right: "全力で挑む" },
+            c31: { char: "🔬 R&Dディレクター", text: "画期的なアルゴリズムを開発しました。特許で利益を得るか、OSSで信頼を得るか？", left: "オープンソースにする", right: "特許を取得する" },
+            c32: { char: "🌏 アジア太平洋地域担当", text: "東京とシンガポールにオフィスが必要です。莫大な費用ですがアジア市場が開けます。", left: "国内に留まる", right: "アジアに進出する" },
+            c33: { char: "🛡️ CISO", text: "国家支援のハッカー集団が我が社を標的にしています。サイバー防衛チームが必要です。", left: "基本的な防御のみ", right: "サイバーチームを構築" },
+            c34: { char: "🏛️ ロビイスト", text: "新しい独占禁止法がビジネスモデルを脅かしています。ロビー活動に数百万が必要です。", left: "規制を受け入れる", right: "政治家にロビー活動" },
+            c35: { char: "🌱 サステナビリティ責任者", text: "データセンターの電力消費量が一部の国を超えています。マスコミに気候犯罪者と呼ばれています。", left: "批判を無視する", right: "グリーン化する" },
+            c36: { char: "🎓 最高学習責任者", text: "世界レベルのエンジニアを社内で育成するため、独自の社内大学を設立すべきです。", left: "高すぎる", right: "アカデミーを設立" },
+            c37: { char: "🤝 M&Aアドバイザー", text: "欧州の競合が苦境にあります。安く買収できますが、膘大な技術的負債を引き継ぎます。", left: "破綻させる", right: "買収する" },
             easter_egg: { char: "👾 ハッカーゼロ", text: "謎のターミナルが開いた。「秘密のジェスチャーを知っていれば仮想通貨をやるよ！」", left: "ターミナルを閉じる", right: "スクリプト実行", up: "仮想通貨を抽出！" },
             easter_egg_cat: { char: "🐱 オフィスの猫", text: "ニャー。(猫がキーボードに飛び乗り、撫でるよう要求している)", left: "シッシッ！", right: "無視する", up: "猫を撫でる！" },
             easter_egg_alien: { char: "👽 宇宙の投資家", text: "⍙⟒ ⍜⎎⎎⟒⍀ ☌⏃⌰⏃☊⏁⟟☊ ☊⍀⟒⎅⟟⏁⌇. 上にスワイプ。", left: "逃げる", right: "当局を呼ぶ", up: "資金を受け取る！" },
@@ -376,14 +470,15 @@ const LOCALES = {
         ui: {
             title: "테크 타이쿤", subtitle: "차고지 스타트업을 글로벌 테크 거인으로 성장시키세요. 화면을 쓸어 경영 결정을 내리세요!",
             start: "스타트업 설립", dead: "해고되었습니다", ruledFor: "생존 기간", sprints: "스프린트",
-            restart: "새 회사 (스프린트 0)", skipTime: "코인으로 빨리 감기 (10 🪙/스프린트):",
+            restart: "새 회사 (스프린트 0)", skipTime: "코인으로 빨리 감기 (5 🪙/스프린트):",
             skipBtn: "건너뛰기", skipCost: "비용", perfect: "완벽한 균형! +3 🪙", sprintPrefix: "제",
             easterEggBonus: "비밀 발견! +5 🪙",
             llamaBonus: "라마의 마법! 30초간 스탯 리셋", llamaEnd: "마법이 풀렸습니다!"
         },
         eras: {
             startup: { name: "차고지 스타트업", title: "창업자" }, scaleup: { name: "스케일업", title: "CEO" },
-            enterprise: { name: "엔터프라이즈", title: "임원" }, giant: { name: "테크 거인", title: "테크 군주" }
+            enterprise: { name: "엔터프라이즈", title: "임원" }, unicorn: { name: "유니콘", title: "유니콘 CEO" },
+            global: { name: "글로벌 제국", title: "글로벌 CEO" }, giant: { name: "테크 거인", title: "테크 군주" }
         },
         reasons: {
             security_0: "대규모 랜섬웨어 공격으로 모든 서버가 날아갔습니다. 회사는 파산했습니다.", security_100: "보안이 너무 엄격해져 직원들이 로그인조차 할 수 없습니다. 업무가 마비되었습니다.",
@@ -402,7 +497,7 @@ const LOCALES = {
             c7: { char: "🕵️ 모의 해커", text: "치명적인 제로데이 취약점을 발견했습니다. 즉시 모든 개발을 멈추고 패치해야 합니다.", left: "새 기능이 먼저야", right: "다 멈추고 고쳐" },
             c8: { char: "🍕 인사 관리자", text: "사기가 떨어지고 있습니다. 금요일 저녁에 의무 참석 피자 파티를 열어 팀워크를 다지죠!", left: "파티 취소해", right: "피자 주문해" },
             c9: { char: "🐛 QA 리더", text: "열려있는 버그가 500개나 됩니다. 기능을 동결하고 이번 스프린트는 기술 부채 해결에 써야 합니다.", left: "버그 무시해", right: "기능 개발 동결" },
-            c10: { 시: "👔 엔지니어링 부사장", text: "테스트 커버리지 100%를 엄격하게 적용해야 합니다. 배포는 느려지겠지만 코드 품질은 좋아집니다.", left: "일단 빨리 배포해", right: "엄격하게 적용해" },
+            c10: { char: "👔 엔지니어링 부사장", text: "테스트 커버리지 100%를 엄격하게 적용해야 합니다. 배포는 느려지겠지만 코드 품질은 좋아집니다.", left: "일단 빨리 배포해", right: "엄격하게 적용해" },
             c11: { char: "🏢 시설 관리자", text: "재택근무 시대는 끝났습니다. 주 5일 사무실 출근을 의무화해야 합니다.", left: "재택근무 유지", right: "모두 사무실로 돌아와!" },
             c12: { char: "🌐 법무 자문", text: "유저 데이터를 몰래 추적해서 타겟 광고로 팔면 엄청난 수익을 얻을 수 있습니다.", left: "사용자 프라이버시 존중", right: "데이터가 곧 돈이다" },
             c13: { char: "🤖 AI 엔지니어", text: "QA 부서 전체를 자동화하는 데 성공했습니다. 돈을 아끼기 위해 다 해고할까요?", left: "재교육 시켜", right: "해고 진행해" },
@@ -418,6 +513,18 @@ const LOCALES = {
             c23: { char: "🌍 아웃소싱 업체", text: "고객 지원 팀 전체를 아웃소싱하면 비용을 절반으로 줄일 수 있습니다.", left: "내부에 유지해.", right: "아웃소싱 해." },
             c24: { char: "⚖️ 정부 규제 당국", text: "당신은 불법 독점을 하고 있습니다. 회사를 분할하겠다고 위협하고 있습니다.", left: "법정에서 싸운다.", right: "로비(뇌물)를 한다." },
             c25: { char: "💎 암호화폐 열성가", text: "회사 자금 전부를 변동성이 큰 자체 밈코인에 투자합시다!", left: "절대 안 돼.", right: "달까지 가즈아!" },
+            c26: { char: "💰 CFO", text: "IPO를 준비 중입니다. 기업 가치를 부풀리기 위해 '창의적 회계'를 사용할까요?", left: "정직한 회계 유지", right: "숫자를 꾸미자" },
+            c27: { char: "🎯 프로덕트 매니저", text: "프리미엄 모델이 돈을 갉아먹고 있습니다. 과감한 구독 모델로 전환해야 합니다.", left: "프리미엄 유지", right: "구독 모델로 전환" },
+            c28: { char: "🏆 인재 스카우트", text: "대형 테크 기업들이 최고의 엔지니어들을 미친 조건으로 빼가고 있습니다. 연봉을 맞춰야 합니다.", left: "보내춰", right: "조건을 맞춰" },
+            c29: { char: "📱 모바일 리드", text: "앱이 40%의 확률로 크래시됩니다. 모든 것을 멈추고 처음부터 다시 만들어야 합니다.", left: "패치로 버터", right: "완전히 재구축" },
+            c30: { char: "🎪 이벤트 매니저", text: "TechCrunch Disrupt 메인 스테이지에 서달라는 초대를 받았습니다. 엄청난 비용이지만 큰 관심을 끌 수 있습니다.", left: "이벤트 건너뛰기", right: "올인하자" },
+            c31: { char: "🔬 R&D 디렉터", text: "획기적인 알고리즘을 개발했습니다. 특허를 내서 수익을 낼까요, 오픈소스로 명성을 쌓을까요?", left: "오픈소스로 공개", right: "특허 출원" },
+            c32: { char: "🌏 아시아태평양 디렉터", text: "도쿄와 싱가포르에 사무실이 필요합니다. 엄청나게 비싸지만 거대한 아시아 시장이 열립니다.", left: "국내에 머물자", right: "아시아로 확장" },
+            c33: { char: "🛡️ CISO", text: "국가 지원 해커 그룹이 우리를 표적으로 삼고 있습니다. 전담 사이버 방어 팀이 필요합니다.", left: "기본 방어만", right: "사이버 팀 구축" },
+            c34: { char: "🏛️ 로비스트", text: "새 반독점법이 우리의 사업 모델을 위협합니다. 수백만 달러를 로비에 써야 합니다.", left: "규칙을 수용해", right: "정치인에 로비해" },
+            c35: { char: "🌱 지속가능성 책임자", text: "우리 데이터 센터가 일부 국가보다 더 많은 전력을 소비합니다. 언론이 우리를 기후 범죄자라고 부릅니다.", left: "비판 무시", right: "친환경으로 전환" },
+            c36: { char: "🎓 최고학습책임자", text: "세계 수준의 엔지니어를 내부에서 키우기 위해 자체 기업 대학을 만들어야 합니다.", left: "너무 비싸", right: "아카데미 설립" },
+            c37: { char: "🤝 M&A 자문", text: "유럽의 경쟁사가 어려움에 처해 있습니다. 저렴하게 인수할 수 있지만 거대한 기술 부채를 떠안게 됩니다.", left: "실패하게 두", right: "인수하자" },
             easter_egg: { char: "👾 해커 제로", text: "알 수 없는 터미널이 열렸습니다. '비밀 제스처를 알면 공짜 크립토를 주지!'", left: "터미널 닫기", right: "스크립트 실행", up: "크립토 추출!" },
             easter_egg_cat: { char: "🐱 오피스 고양이", text: "야옹. (고양이가 키보드 위로 뛰어올라 쓰다듬어 달라고 요구합니다.)", left: "저리 가!", right: "무시한다", up: "고양이를 쓰다듬는다!" },
             easter_egg_alien: { char: "👽 우주 투자자", text: "⍙⟒ ⍜⎎⎎⟒⍀ ☌⏃⌰⏃☊⏁⟟☊ ☊⍀⟒⎅⟟⏁⌇. 위로 스와이프 하세요.", left: "도망친다", right: "당국에 신고한다", up: "투자를 수락한다!" },
@@ -799,7 +906,7 @@ export default function App() {
     const currentEffects = swipeDir === 'left' ? currentCardRef?.left :
         swipeDir === 'right' ? currentCardRef?.right : null;
 
-    const maxPossibleSkip = Math.min(lastRunYears, Math.floor(metaCoins / 10));
+    const maxPossibleSkip = Math.min(lastRunYears, Math.floor(metaCoins / 5));
 
     const StatIcon = ({ icon: Icon, statKey, value }) => {
         const willChange = currentEffects && currentEffects[statKey] !== undefined && currentEffects[statKey] !== 0;
@@ -976,10 +1083,10 @@ export default function App() {
                                 />
                                 <button
                                     disabled={skipAmount === 0}
-                                    onClick={() => { setMetaCoins(prev => prev - (skipAmount * 10)); startGame(skipAmount); }}
+                                    onClick={() => { setMetaCoins(prev => prev - (skipAmount * 5)); startGame(skipAmount); }}
                                     className={`py-2 rounded-full font-bold transition-all text-sm ${skipAmount > 0 ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
                                 >
-                                    {t.ui.skipBtn} {skipAmount} {t.ui.sprints} ({t.ui.skipCost}: {skipAmount * 10} 🪙)
+                                    {t.ui.skipBtn} {skipAmount} {t.ui.sprints} ({t.ui.skipCost}: {skipAmount * 5} 🪙)
                                 </button>
                             </div>
                         )}
