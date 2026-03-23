@@ -450,6 +450,8 @@ export default function App() {
                     if (data.gameState !== undefined) setGameState(data.gameState);
                     if (data.kingNumber !== undefined) setKingNumber(data.kingNumber);
                     if (data.lastRunYears !== undefined) setLastRunYears(data.lastRunYears);
+                    if (data.gameOverReason !== undefined) setGameOverReason(data.gameOverReason);
+                    if (data.isVictory !== undefined) setIsVictory(data.isVictory);
 
                     if (data.gameState === 'PLAYING') {
                         const startSprints = data.sprints !== undefined ? data.sprints : 0;
@@ -477,11 +479,13 @@ export default function App() {
                 sprints,
                 gameState,
                 kingNumber,
-                lastRunYears
+                lastRunYears,
+                gameOverReason,
+                isVictory
             });
         }, 1000);
         return () => clearTimeout(timeout);
-    }, [metaCoins, stats, sprints, gameState, kingNumber, lastRunYears, user]);
+    }, [metaCoins, stats, sprints, gameState, kingNumber, lastRunYears, gameOverReason, isVictory, user, isLoaded]);
 
     useEffect(() => {
         if (showLeaderboard) {
