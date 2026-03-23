@@ -6,3 +6,29 @@ body {
     margin: 0;
     background-color: #0f172a; /* slate-900 */
 }
+
+@keyframes langDropIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Language dropdown scrollbar */
+[role="listbox"]::-webkit-scrollbar {
+    width: 5px;
+}
+[role="listbox"]::-webkit-scrollbar-track {
+    background: transparent;
+}
+[role="listbox"]::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3);
+    border-radius: 10px;
+}
+[role="listbox"]::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.5);
+}
