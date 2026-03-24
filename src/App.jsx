@@ -352,7 +352,7 @@ export default function App() {
         <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center overflow-hidden font-sans select-none">
 
             {/* ── Top Bar ── */}
-            <div className="w-full max-w-md p-4 flex flex-col gap-4 bg-slate-900 z-10 relative">
+            <div className="w-full max-w-md p-4 flex flex-col gap-4 bg-slate-900 z-50 relative">
                 <div className="flex justify-between items-center w-full">
                     {/* Left: coins + leaderboard */}
                     <div className="flex gap-2 items-center">

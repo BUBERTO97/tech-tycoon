@@ -10,7 +10,7 @@ function StatInfoModal({ statKey, statLoc, value, metaCoins, onReveal, onClose, 
 
     return (
         <div
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
             style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
             onClick={onClose}
         >
