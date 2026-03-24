@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #0f172a; /* slate-900 fallback */
+    overflow: hidden; /* prevents scrollbars on desktop */
+}
+
+/* Fix for React Native Web root flex behavior */
+#root > div {
+    display: flex;
+    flex: 1;
+    width: 100%;
+}
