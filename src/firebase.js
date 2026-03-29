@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, serverTimestamp, addDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_API_KEY",
@@ -98,5 +98,60 @@ export const getUserData = async (user) => {
     } catch (error) {
         console.error("Error getting user data", error);
         return null;
+    }
+};
+
+export const saveAICard = async (cardData, user, lang) => {
+    if (!user) return;
+    try {
+        const cardRef = doc(db, 'cards', cardData.id);
+        const firestoreCard = {
+            id: cardData.id,
+            isAI: true,
+            isEasterEgg: !!cardData.isEasterEgg,
+            era: cardData.era,
+            left: cardData.left || {},
+            right: cardData.right || {},
+            up: cardData.up || {},
+            translations: {
+                [lang]: cardData.loc
+            },
+            createdBy: user.uid,
+            creatorEmail: user.email || 'Anonymous',
+            createdAt: serverTimestamp()
+        };
+        await setDoc(cardRef, firestoreCard, { merge: true });
+    } catch (error) {
+        console.error("Error saving AI card", error);
+    }
+};
+
+export const getCards = async () => {
+    try {
+        const q = query(collection(db, 'cards'), orderBy('createdAt', 'desc'), limit(100)); // Limit to prevent massive loads
+        const querySnapshot = await getDocs(q);
+        const results = [];
+        querySnapshot.forEach((doc) => {
+            results.push(doc.data());
+        });
+        return results;
+    } catch (error) {
+        console.error("Error fetching cards", error);
+        return [];
+    }
+};
+
+export const saveEvent = async (eventType, eventData, user) => {
+    if (!user) return;
+    try {
+        const eventsRef = collection(db, 'events');
+        await addDoc(eventsRef, {
+            eventType,
+            uid: user.uid,
+            ...eventData,
+            timestamp: serverTimestamp()
+        });
+    } catch (error) {
+        console.error("Error saving event", error);
     }
 };

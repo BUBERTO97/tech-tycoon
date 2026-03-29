@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Shield, Users, Cpu, Coins, Sparkles, List, LogIn, LogOut } from 'lucide-react';
-import { auth, loginWithGoogle, logout, saveHighScore, getLeaderboard, saveUserData, getUserData } from './firebase';
+import { auth, loginWithGoogle, logout, saveHighScore, getLeaderboard, saveUserData, getUserData, saveAICard, getCards, saveEvent } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { DECK_DATA, EASTER_EGGS, ERAS_DATA, LOCALES } from './constants/gameData';
 import { generateGeminiCards } from './utils/ai';
@@ -48,6 +48,9 @@ export default function App() {
     const [showLeaderboard, setShowLeaderboard] = useState(false);
     const [leaderboard, setLeaderboard] = useState([]);
 
+    // ── Community cards ───────────────────────────────────────────────────────
+    const [communityCards, setCommunityCards] = useState([]);
+
     // ── Llama power-up ────────────────────────────────────────────────────────
     const [llamaSnapshot, setLlamaSnapshot] = useState(null);
     const [llamaTimer, setLlamaTimer] = useState(0);
@@ -67,7 +70,7 @@ export default function App() {
     const currentEraObj = getEraObj(sprints);
     const currentEraLoc = t.eras[currentEraObj.id];
     const currentCardLoc = currentCardRef?.isAI
-        ? currentCardRef.loc
+        ? (currentCardRef.translations ? (currentCardRef.translations[lang] || Object.values(currentCardRef.translations)[0]) : currentCardRef.loc)
         : (currentCardRef ? t.cards[currentCardRef.id] : null);
 
     const swipeDir = (currentCardRef?.isEasterEgg && dragY < -50 && Math.abs(dragY) > Math.abs(dragX))
@@ -81,6 +84,7 @@ export default function App() {
 
     // ── Auth / data load ──────────────────────────────────────────────────────
     useEffect(() => {
+        getCards().then(setCommunityCards);
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             if (currentUser) {
@@ -162,10 +166,13 @@ export default function App() {
         setIsDragging(false);
         setAnimState('idle');
         const eraObj = getEraObj(startSprints);
-        const shuffled = [...DECK_DATA.filter(c => c.era === eraObj.id)].sort(() => 0.5 - Math.random());
+        const baseCards = DECK_DATA.filter(c => c.era === eraObj.id);
+        const commCards = communityCards.filter(c => c.era === eraObj.id);
+        const shuffled = [...baseCards, ...commCards].sort(() => 0.5 - Math.random());
         setDeck(shuffled);
         setCurrentCardRef(shuffled[0]);
         setGameState('PLAYING');
+        saveEvent('game_started', { startSprints, lang }, user);
     };
 
     const applyEffects = (effects) => {
@@ -193,6 +200,7 @@ export default function App() {
             if (user) {
                 saveHighScore(user, sprints);
                 saveUserData(user, { stats: newStats, gameOverReason: t.reasons[reasonKey], isVictory: false });
+                saveEvent('game_over', { reason: t.reasons[reasonKey], sprints, stats: newStats }, user);
             }
             return;
         }
@@ -209,6 +217,7 @@ export default function App() {
             if (user) {
                 saveHighScore(user, nextSprints);
                 saveUserData(user, { stats: newStats, gameOverReason: t.reasons.victory, isVictory: true });
+                saveEvent('game_over', { reason: 'victory', sprints: nextSprints, stats: newStats }, user);
             }
             return;
         }
@@ -243,6 +252,9 @@ export default function App() {
                 loc: aiData.loc,
             }));
             setAiDeck(prev => [...prev, ...formattedCards]);
+            if (user) {
+                formattedCards.forEach(c => saveAICard(c, user, lang));
+            }
         } catch (err) {
             console.error('AI card batch generation failed:', err);
         } finally {
@@ -270,7 +282,9 @@ export default function App() {
         newDeck.shift();
         const eraObj = getEraObj(currentSprints);
         if (newDeck.length === 0 || (currentCardRef && currentCardRef.era !== eraObj.id)) {
-            newDeck = [...DECK_DATA.filter(c => c.era === eraObj.id)].sort(() => 0.5 - Math.random());
+            const baseCards = DECK_DATA.filter(c => c.era === eraObj.id);
+            const commCards = communityCards.filter(c => c.era === eraObj.id);
+            newDeck = [...baseCards, ...commCards].sort(() => 0.5 - Math.random());
         }
         setDeck(newDeck);
         setCurrentCardRef(newDeck[0]);
@@ -295,6 +309,12 @@ export default function App() {
         setIsDragging(false);
         const THRESHOLD = 100;
         const isUpSwipe = currentCardRef?.isEasterEgg && dragY < -THRESHOLD && Math.abs(dragY) > Math.abs(dragX);
+        const swipeDirAct = isUpSwipe ? 'up' : (dragX > THRESHOLD ? 'right' : (dragX < -THRESHOLD ? 'left' : null));
+        
+        if (swipeDirAct && user && currentCardRef) {
+             const titleSafe = currentCardLoc?.text ? currentCardLoc.text.substring(0, 30) : '';
+             saveEvent('card_swiped', { cardId: currentCardRef.id, dir: swipeDirAct, title: titleSafe }, user);
+        }
 
         if (isUpSwipe) {
             setAnimState('exiting');
